@@ -11,9 +11,10 @@
     <vendor email="1397100450@qq.com">DevGear</vendor>
 
     <description><![CDATA[
-   光标源类 用户自己选择一个目标类
-   输入名称即可生成，创建目标类的新实例，使用源类的getter方法获取值，然后调用目标类的setter方法设置这些值
-   并且支持自定义目标类和源类名称
+     光标选择一个类，
+     用户自己搜索选择一个目标类
+     输入目标类和源类的名称即可自动创建目标类的新实例，使用源类的getter方法获取值，然后调用目标类的setter方法设置这些值
+     并且支持自定义目标类和源类的名称
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
