@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-    <id>com.dev.gear</id>
+    <id>com.luweijie.dev.gear</id>
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
@@ -11,19 +11,17 @@
     <vendor email="1397100450@qq.com">DevGear</vendor>
 
     <description><![CDATA[
-     光标选择一个类，
-     用户自己搜索选择一个目标类
-     输入目标类和源类的名称即可自动创建目标类的新实例，使用源类的getter方法获取值，然后调用目标类的setter方法设置这些值
-     并且支持自定义目标类和源类的名称
-    ]]></description>
+   Select a class by placing the cursor on it.
+   Allow the user to search and choose a target class.
+   Automatically create a new instance of the target class using the source class's getter methods to retrieve values, and then call the target class's setter methods to set those values.
+   Allow the user to customize the names of both the target class and the source class.
+]]></description>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
 
 
-    <!-- Product and plugin compatibility requirements.
-         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-    <depends>com.intellij.modules.platform</depends>
+
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
