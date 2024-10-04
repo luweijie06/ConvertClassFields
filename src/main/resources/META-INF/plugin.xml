@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
-    <id>com.luweijie.dev.gear</id>
+    <id>com.dev.gear</id>
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
@@ -10,18 +10,36 @@
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor email="1397100450@qq.com">DevGear</vendor>
 
-    <description><![CDATA[
-   Select a class by placing the cursor on it.
-   Allow the user to search and choose a target class.
-   Automatically create a new instance of the target class using the source class's getter methods to retrieve values, and then call the target class's setter methods to set those values.
-   Allow the user to customize the names of both the target class and the source class.
-]]></description>
+    <description>
+        <![CDATA[
+        <h1>ConvertClassFieldsAction: Streamline Java Class Field Conversion</h1>
+
+        <p>ConvertClassFieldsAction is a powerful IntelliJ IDEA plugin designed to enhance Java development productivity. It offers a seamless way to convert fields between different Java classes, saving time and reducing errors in your code.</p>
+
+        <h2>Key features:</h2>
+        <ol>
+            <li>Smart Class Search: Quickly find and select target classes using an intuitive search interface.</li>
+            <li>Intelligent Field Mapping: Automatically map fields between source and target classes based on name and type.</li>
+            <li>Getter/Setter Generation: Automatically generate setter calls with corresponding getter methods.</li>
+            <li>Code Insertion: Insert the generated code at the cursor position with proper formatting.</li>
+            <li>Customizable Naming: Allow developers to customize variable names for better code readability.</li>
+        </ol>
+
+        <h2>How to use:</h2>
+        <ol>
+            <li>Select a variable of a class type in your Java code.</li>
+            <li>Right-click and choose the "Convert Class Fields" option from the context menu, or use the shortcut Ctrl+Shift+C.</li>
+            <li>In the class chooser dialog, search for and select the target class you want to convert to.</li>
+            <li>Enter the variable names for the source and target objects in the input dialog.</li>
+            <li>The plugin will generate and insert the conversion code below your cursor.</li>
+        </ol>
+
+        <p>DevGear simplifies the process of transferring data between objects, making your Java development workflow more efficient and error-free. With just a few clicks, you can generate clean, properly formatted code for object conversion, saving time and reducing the risk of errors in manual field mapping.</p>
+        ]]>
+    </description>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
-
-
-
 
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->

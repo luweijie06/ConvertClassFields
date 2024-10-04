@@ -89,7 +89,7 @@ public class ConvertClassFieldsAction extends AnAction {
                     return;
                 }
 
-                String newInstanceCode = sourceClass.getName() + " " + variableName + " = new " + sourceClass.getName() + "();";
+                String newInstanceCode = targetClass.getName() + " " + targetClassName + " = new " + targetClass.getName() + "();";
 
                 List<String> setterCalls = new ArrayList<>();
                 setterCalls.add(newInstanceCode);
@@ -101,8 +101,8 @@ public class ConvertClassFieldsAction extends AnAction {
                         if (sourceField != null) {
                             PsiMethod getter = findGetter(targetClass, targetField);
                             if (getter != null) {
-                                String setterCall = variableName + "." + setter.getName() + "(" +
-                                        targetClassName + "." + getter.getName() + "());";
+                                String setterCall = targetClassName + "." + setter.getName() + "(" +
+                                        variableName + "." + getter.getName() + "());";
                                 setterCalls.add(setterCall);
                             }
                         }
