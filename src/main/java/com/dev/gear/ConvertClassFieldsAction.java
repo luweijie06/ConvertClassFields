@@ -7,20 +7,19 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.SelectionModel;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.*;
 import com.intellij.psi.util.PsiTreeUtil;
-import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class ConvertClassFieldsAction extends AnAction {
-
-
+    private static final List<String> LIST_TYPES = Arrays.asList(
+            "List", "ArrayList", "LinkedList", "Vector", "Stack", "CopyOnWriteArrayList"
+    );
     @Override
     public void actionPerformed(AnActionEvent e) {
         Project project = e.getProject();
@@ -34,7 +33,7 @@ public class ConvertClassFieldsAction extends AnAction {
 
         SelectionModel selectionModel = editor.getSelectionModel();
         if (!selectionModel.hasSelection()) {
-            showErrorMessage(project, "No Selection", "Please select class to convert.");
+            showErrorMessage(project, "No Selection", "Please select a variable to convert.");
             return;
         }
 
@@ -44,76 +43,98 @@ public class ConvertClassFieldsAction extends AnAction {
             showErrorMessage(project, "Invalid Selection", "Unable to find a valid element at the cursor position.");
             return;
         }
-
         PsiVariable variable = PsiTreeUtil.getParentOfType(element, PsiVariable.class);
-        if (variable == null || !(variable.getType() instanceof PsiClassType)) {
+        if (variable == null) {
             showErrorMessage(project, "Invalid Selection", "Please select a variable of a class type.");
             return;
         }
 
-        PsiClass sourceClass = ((PsiClassType) variable.getType()).resolve();
+        PsiType type = variable.getType();
+        PsiClass sourceClass = null;
+        String sourceTypeName = "";
+
+        if (type instanceof PsiClassType) {
+            PsiClassType classType = (PsiClassType) type;
+            String className = classType.getClassName();
+            if (LIST_TYPES.contains(className)) {
+                PsiType[] parameters = classType.getParameters();
+                if (parameters.length > 0 && parameters[0] instanceof PsiClassType) {
+                    sourceClass = ((PsiClassType) parameters[0]).resolve();
+                    sourceTypeName = parameters[0].getPresentableText();
+                }
+            } else {
+                sourceClass = classType.resolve();
+                sourceTypeName = classType.getClassName();
+            }
+        }
+
         if (sourceClass == null) {
-            showErrorMessage(project, "Invalid Class", "Unable to resolve the class of the selected variable.");
+            showErrorMessage(project, "Invalid Selection", "Please select a variable of a valid class type.");
             return;
         }
 
-        PsiClass targetClass = ClassChooserUtil.chooseClass(project, "Type to search for classes");
-        if (targetClass == null) {
-            return; // User cancelled the class selection, no need for error message
+
+        CombinedConversionDialog dialog = new CombinedConversionDialog(project, variable.getName(), sourceClass);
+        if (dialog.showAndGet()) {
+            PsiClass targetClass = dialog.getTargetClass();
+            boolean isList = dialog.isList();
+            String sourceName = dialog.getSourceName();
+            String targetName = dialog.getTargetName();
+            Map<String, String> fieldMapping = dialog.getFieldMapping();
+
+            generateConversionCode(project, editor, sourceClass, targetClass, isList, sourceName, targetName, sourceTypeName, fieldMapping);
         }
-
-        generateSetterWithGetter(project, targetClass, sourceClass, editor);
     }
-
 
     private void showErrorMessage(Project project, String title, String message) {
         Messages.showErrorDialog(project, message, title);
     }
-    private void generateSetterWithGetter(Project project, PsiClass targetClass, PsiClass sourceClass, Editor editor) {
-        WriteCommandAction.runWriteCommandAction(project, () -> {
-            String defaultClassName = sourceClass != null ? sourceClass.getName() : "";
-            String defaultTargetClassName = targetClass.getName();
 
-            if (defaultClassName != null && !defaultClassName.isEmpty()) {
-                defaultClassName = Character.toLowerCase(defaultClassName.charAt(0)) + defaultClassName.substring(1);
-            }
-            if (defaultTargetClassName != null && !defaultTargetClassName.isEmpty()) {
-                defaultTargetClassName = Character.toLowerCase(defaultTargetClassName.charAt(0)) + defaultTargetClassName.substring(1);
-            }
-            InputDialog dialog = new InputDialog(project, defaultClassName, defaultTargetClassName);
-            if (dialog.showAndGet()) {
-                String variableName = dialog.getVariableName();
-                String targetClassName = dialog.getTargetClassName();
 
-                if (variableName.isEmpty() || targetClassName.isEmpty()) {
-                    return;
-                }
 
-                String newInstanceCode = targetClass.getName() + " " + targetClassName + " = new " + targetClass.getName() + "();";
-
-                List<String> setterCalls = new ArrayList<>();
-                setterCalls.add(newInstanceCode);
-
-                for (PsiField targetField : targetClass.getFields()) {
-                    PsiMethod setter = findSetter(targetClass, targetField);
-                    if (setter != null) {
-                        PsiField sourceField = findMatchingField(sourceClass, targetField);
-                        if (sourceField != null) {
-                            PsiMethod getter = findGetter(targetClass, targetField);
-                            if (getter != null) {
-                                String setterCall = targetClassName + "." + setter.getName() + "(" +
-                                        variableName + "." + getter.getName() + "());";
-                                setterCalls.add(setterCall);
-                            }
+    private void generateSetterCalls(PsiClass targetClass, PsiClass sourceClass, String targetName, String sourceName, List<String> conversionCode, String indent, Map<String, String> fieldMapping) {
+        if (sourceClass == null) {
+            return;
+        }
+        for (PsiField targetField : targetClass.getFields()) {
+            String targetFieldName = targetField.getName();
+            if (fieldMapping.containsKey(targetFieldName)) {
+                PsiMethod setter = findSetter(targetClass, targetField);
+                if (setter != null) {
+                    String sourceFieldName = fieldMapping.get(targetFieldName);
+                    PsiField sourceField = sourceClass.findFieldByName(sourceFieldName, false);
+                    if (sourceField != null) {
+                        PsiMethod getter = findGetter(sourceClass, sourceField);
+                        if (getter != null) {
+                            String setterCall = indent + targetName + "." + setter.getName() + "(" +
+                                    sourceName + "." + getter.getName() + "());";
+                            conversionCode.add(setterCall);
                         }
                     }
                 }
-
-                CodeInsertionUtil.insertCodeBelowCursor(project, editor, setterCalls);
             }
+        }
+    }
+    private void generateConversionCode(Project project, Editor editor, PsiClass sourceClass, PsiClass targetClass, boolean isList, String sourceVariableName, String targetName, String sourceTypeName, Map<String, String> fieldMapping) {
+        WriteCommandAction.runWriteCommandAction(project, () -> {
+            List<String> conversionCode = new ArrayList<>();
+            if (isList) {
+                String sourceElementTypeName = sourceTypeName.replaceFirst("^List<", "").replaceFirst(">$", "");
+
+                conversionCode.add("List<" + targetClass.getName() + "> " + targetName + " = new ArrayList<>();");
+                conversionCode.add("for (" + sourceElementTypeName + " item : " + sourceVariableName + ") {");
+                conversionCode.add("    " + targetClass.getName() + " " + targetName + "Item = new " + targetClass.getName() + "();");
+                generateSetterCalls(targetClass, sourceClass, targetName + "Item", "item", conversionCode, "    ", fieldMapping);
+                conversionCode.add("    " + targetName + ".add(" + targetName + "Item);");
+                conversionCode.add("}");
+            } else {
+                conversionCode.add(targetClass.getName() + " " + targetName + " = new " + targetClass.getName() + "();");
+                generateSetterCalls(targetClass, sourceClass, targetName, sourceVariableName, conversionCode, "", fieldMapping);
+            }
+
+            CodeInsertionUtil.insertCodeBelowCursor(project, editor, conversionCode);
         });
     }
-
     private PsiMethod findSetter(PsiClass psiClass, PsiField field) {
         String setterName = "set" + capitalize(field.getName());
         PsiMethod[] setters = psiClass.findMethodsByName(setterName, false);
@@ -126,50 +147,8 @@ public class ConvertClassFieldsAction extends AnAction {
         return getters.length > 0 ? getters[0] : null;
     }
 
-    private PsiField findMatchingField(PsiClass sourceClass, PsiField targetField) {
-        for (PsiField sourceField : sourceClass.getFields()) {
-            if (sourceField.getName().equals(targetField.getName()) && sourceField.getType().equals(targetField.getType())) {
-                return sourceField;
-            }
-        }
-        return null;
-    }
 
     private String capitalize(String str) {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
-
-    private static class InputDialog extends DialogWrapper {
-        private JTextField variableNameField;
-        private JTextField targetClassNameField;
-
-        protected InputDialog(Project project, String defaultVariableName, String defaultTargetClassName) {
-            super(project);
-            setTitle("Enter Names");
-            init();
-            variableNameField.setText(defaultVariableName);
-            targetClassNameField.setText(defaultTargetClassName);
-        }
-
-        @Nullable
-        @Override
-        protected JComponent createCenterPanel() {
-            JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
-            panel.add(new JLabel("Variable Name:"));
-            variableNameField = new JTextField();
-            panel.add(variableNameField);
-            panel.add(new JLabel("Target Class Name:"));
-            targetClassNameField = new JTextField();
-            panel.add(targetClassNameField);
-            return panel;
-        }
-
-        public String getVariableName() {
-            return variableNameField.getText();
-        }
-
-        public String getTargetClassName() {
-            return targetClassNameField.getText();
-        }
     }
 }

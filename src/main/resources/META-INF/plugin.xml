@@ -44,7 +44,7 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-
+        <postStartupActivity implementation="com.dev.gear.PluginInitializer"/>
     </extensions>
     <actions>
         <action id="Convert Class Fields" class="com.dev.gear.ConvertClassFieldsAction"
