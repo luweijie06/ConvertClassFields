@@ -62,7 +62,6 @@ targetDTO.setDescription(sourceDTO.getDescription());
 ## 系统要求
 
 - IntelliJ IDEA 2023.1 或更高版本
-- Java 17 或更高版本
 
 ## 技术特点
 
