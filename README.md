@@ -97,4 +97,4 @@ A: 插件生成标准的 Java 代码，你可以根据需要自由修改生成�
 
 ## 开源协议
 
-本项目采用 MIT 协议开源 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 Apache-2.0  协议开源 - 详见 [LICENSE](LICENSE) 文件
